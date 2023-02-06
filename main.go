@@ -36,7 +36,13 @@ func performLookup(wg *sync.WaitGroup, ch chan string, resolvers *[]string) {
 
 		switch r.Rcode {
 		case dns.RcodeNameError:
-			fmt.Printf("- %s [AVAILABLE]\n", r.Question[0].Name)
+			// even is NXDOMAIN is returned, the domain namne can still be registered
+			// by the registry.
+			if len(r.Answer) == 0 {
+				fmt.Printf("- %s [AVAILABLE]\n", r.Question[0].Name)
+			} else {
+				fmt.Printf("- %s [TAKEN]\n", r.Question[0].Name)
+			}
 		case dns.RcodeSuccess:
 			fmt.Printf("- %s [TAKEN]\n", r.Question[0].Name)
 		default:
