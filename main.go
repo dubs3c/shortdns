@@ -8,16 +8,20 @@ import (
 )
 
 // generateDomains Generates a domain and pushes it to the channel
-func generateDomains(tld string, ch chan string) {
+func generateDomains(ch chan string) {
+	tlds := []string{"se", "nu", "pw", "sh", "rs", "tv", "gg", "fm", "cx"}
 	var i byte
-	for i = 'a'; i < 'z'; i++ {
-		domain := fmt.Sprintf("%s.%s", string(rune(i)), tld)
-		ch <- domain
+	for _, tld := range tlds {
+		for i = 'a'; i < 'z'; i++ {
+			domain := fmt.Sprintf("%s.%s", string(rune(i)), tld)
+			ch <- domain
+		}
 	}
 	close(ch)
 }
 
-func performLookup(wg *sync.WaitGroup, c *dns.Client, ch chan string, resolvers *[]string) {
+func performLookup(wg *sync.WaitGroup, ch chan string, resolvers *[]string) {
+	c := new(dns.Client)
 
 	for domain := range ch {
 		m := new(dns.Msg)
@@ -44,7 +48,6 @@ func performLookup(wg *sync.WaitGroup, c *dns.Client, ch chan string, resolvers 
 }
 
 func main() {
-	c := new(dns.Client)
 
 	whoisChan := make(chan string, 1)
 	resolvers := []string{}
@@ -56,11 +59,11 @@ func main() {
 
 	fmt.Println("[+] Creating workers")
 	for i := 0; i < workers; i++ {
-		go performLookup(wg, c, whoisChan, &resolvers)
+		go performLookup(wg, whoisChan, &resolvers)
 	}
 
 	fmt.Println("[+] Generating domains:")
-	go generateDomains("nu", whoisChan)
+	go generateDomains(whoisChan)
 
 	wg.Wait()
 
